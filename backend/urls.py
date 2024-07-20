@@ -17,7 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from core.views import UserViewSet, ListViewSet
+from core.views import UserViewSet, ListViewSet, RegisterViewSet, LoginViewSet, AuthUserViewSet, UpdateUserViewSet
+from knox import views as knox_views
 
 
 router = DefaultRouter()
@@ -27,5 +28,12 @@ router.register(r"lists", ListViewSet)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/", include(router.urls)),
+    path("", include(router.urls)),
+    path("api/auth", include("knox.urls")),
+    path("api/auth/register", RegisterViewSet.as_view()),
+    path("api/auth/login", LoginViewSet.as_view()),
+    path("api/auth/user", AuthUserViewSet.as_view()),
+    path("api/auth/logout", knox_views.LogoutView.as_view(), name="knox_logout"),
+    path("api/auth/logoutall", knox_views.LogoutAllView.as_view(), name="knox_logoutall"),
+    path("api/auth/update", UpdateUserViewSet.as_view()),
 ]
