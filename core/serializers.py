@@ -39,7 +39,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         User.objects.create(
             owner=user,
-            name=user.username,
             email=user.email,
             password=validated_data['password'],
         )
@@ -60,14 +59,12 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UpdateUserSerializer(serializers.Serializer):
-    email = serializers.EmailField()
     name = serializers.CharField(required=False)
     password = serializers.CharField(write_only=True, required=False)
     zip_code = serializers.CharField(required=False)
 
     def update(self, auth_user, validated_data):
-        if 'name' in validated_data:
-            auth_user.username = validated_data['name']
+        # Update the auth_user instance
         if 'password' in validated_data:
             auth_user.set_password(validated_data['password'])
         auth_user.save()
@@ -77,6 +74,7 @@ class UpdateUserSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise serializers.ValidationError("User profile not found.")
 
+        # Update the user instance
         if 'name' in validated_data:
             user.name = validated_data['name']
         if 'password' in validated_data:
