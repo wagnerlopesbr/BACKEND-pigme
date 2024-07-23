@@ -1,5 +1,6 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated  # insert "permission_classes = [IsAuthenticated]"" in the class to require authentication
 from .serializers import (UserGetSerializer,
                           UserCreateSerializer,
                           UserUpdateSerializer,
@@ -7,11 +8,17 @@ from .serializers import (UserGetSerializer,
                           ShoppingListCreateSerializer,
                           ShoppingListUpdateSerializer)
 from .models import User, ShoppingList
+from rest_framework.views import APIView
 
 
 class UserListCreateView(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserCreateSerializer
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [permissions.IsAuthenticated()]
+        return []
 
     def get(self, request, *args, **kwargs):
         users = User.objects.all()
@@ -31,6 +38,7 @@ class UserListCreateView(generics.ListCreateAPIView):
     
 
 class UserRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
     queryset = User.objects.all()
     serializer_class = UserUpdateSerializer
     lookup_field = "pk"
@@ -50,6 +58,7 @@ class UserRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class ShoppingListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
     queryset = ShoppingList.objects.all()
     serializer_class = ShoppingListCreateSerializer
 
@@ -67,6 +76,7 @@ class ShoppingListCreateView(generics.ListCreateAPIView):
 
 
 class ShoppingListRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
     queryset = ShoppingList.objects.all()
     serializer_class = ShoppingListUpdateSerializer
     lookup_field = "pk"
