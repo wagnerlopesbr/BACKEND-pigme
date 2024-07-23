@@ -104,7 +104,7 @@
 #         channel.exchange_declare(exchange='core_exchange', exchange_type='direct', durable=True)
 #         channel.queue_declare(queue='user_operations', durable=True)
 #         channel.queue_declare(queue='list_operations', durable=True)
-        
+
 #         channel.basic_consume(
 #             queue='user_operations',
 #             on_message_callback=callback,
