@@ -1,85 +1,65 @@
-from rest_framework import generics, status
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.models import User as AuthUserModel
+from knox.models import AuthToken
+from .models import Account, List
+from .serializers import AccountSerializer, ListSerializer, AuthUserSerializer
 from rest_framework.response import Response
-from .serializers import (UserGetSerializer,
-                          UserCreateSerializer,
-                          UserUpdateSerializer,
-                          ShoppingListGetSerializer,
-                          ShoppingListCreateSerializer,
-                          ShoppingListUpdateSerializer)
-from .models import User, ShoppingList
+from rest_framework.exceptions import PermissionDenied
 
 
-class UserListCreateView(generics.ListCreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserCreateSerializer
+class RegisterUserView(generics.CreateAPIView):
+    serializer_class = AuthUserSerializer
 
-    def get(self, request, *args, **kwargs):
-        users = User.objects.all()
-        serializer = UserGetSerializer(users, many=True)
-        return Response(serializer.data)
-    
-    def create(self, request, *args, **kwargs):
-        serializer = UserCreateSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, *args, **kwargs):  # to delete all users
-        User.objects.all().delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-    
-
-class UserRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserUpdateSerializer
-    lookup_field = "pk"
-
-    def get(self, request, *args, **kwargs):
-        user = User.objects.get(pk=kwargs["pk"])
-        serializer = UserGetSerializer(user)
-        return Response(serializer.data)
-    
-    def update(self, request, *args, **kwargs):
-        user = User.objects.get(pk=kwargs["pk"])
-        serializer = UserUpdateSerializer(user, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class ShoppingListCreateView(generics.ListCreateAPIView):
-    queryset = ShoppingList.objects.all()
-    serializer_class = ShoppingListCreateSerializer
-
-    def get(self, request, *args, **kwargs):
-        shopping_lists = ShoppingList.objects.all()
-        serializer = ShoppingListGetSerializer(shopping_lists, many=True)
-        return Response(serializer.data)
-
-    def create(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
+        """Creates a new user and associated account."""
         serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        token = AuthToken.objects.create(user)[1]
+        return Response({
+            "user": AuthUserSerializer(user, context=self.get_serializer_context()).data,
+            "token": token,
+        })
 
 
-class ShoppingListRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = ShoppingList.objects.all()
-    serializer_class = ShoppingListUpdateSerializer
-    lookup_field = "pk"
+class DeleteUserView(generics.DestroyAPIView):
+    queryset = AuthUserModel.objects.all()
+    serializer_class = AuthUserSerializer
 
-    def get(self, request, *args, **kwargs):
-        shopping_list = ShoppingList.objects.get(pk=kwargs["pk"])
-        serializer = ShoppingListGetSerializer(shopping_list)
-        return Response(serializer.data)
-    
-    def update(self, request, *args, **kwargs):
-        shopping_list = ShoppingList.objects.get(pk=kwargs["pk"])
-        serializer = ShoppingListUpdateSerializer(shopping_list, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    def get_object(self):
+        obj = super().get_object()
+        if obj != self.request.user:
+            raise PermissionDenied("You do not have permission to delete this user.")
+        return obj
+
+
+class AccountDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """View to retrieve, update, or delete an Account."""
+    queryset = Account.objects.all()
+    serializer_class = AccountSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        """Returns the currently logged-in user's account."""
+        return self.request.user.account
+
+class ListCreateView(generics.CreateAPIView):
+    """View to create a new list (List)."""
+    queryset = List.objects.all()
+    serializer_class = ListSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        """Associates the list with the currently logged-in user's account."""
+        serializer.save(account=self.request.user.account)
+
+class ListDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """View to retrieve, update, or delete a list (List)."""
+    queryset = List.objects.all()
+    serializer_class = ListSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Returns only lists associated with the currently logged-in user's account."""
+        return List.objects.filter(account=self.request.user.account)
