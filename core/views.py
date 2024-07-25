@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User as AuthUserModel
 from knox.models import AuthToken
 from .models import Account, List
-from .serializers import AccountSerializer, ListSerializer, AuthUserSerializer
+from .serializers import AccountSerializer, ListSerializer, AuthUserSerializer, LoginSerializer
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
@@ -23,17 +23,6 @@ class RegisterUserView(generics.CreateAPIView):
         })
 
 
-class DeleteUserView(generics.DestroyAPIView):
-    queryset = AuthUserModel.objects.all()
-    serializer_class = AuthUserSerializer
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj != self.request.user:
-            raise PermissionDenied("You do not have permission to delete this user.")
-        return obj
-
-
 class AccountDetailView(generics.RetrieveUpdateDestroyAPIView):
     """View to retrieve, update, or delete an Account."""
     queryset = Account.objects.all()
@@ -43,6 +32,25 @@ class AccountDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         """Returns the currently logged-in user's account."""
         return self.request.user.account
+    
+    def perform_destroy(self, instance):
+        """Override perform_destroy to also delete the associated user."""
+        if instance.user != self.request.user:
+            raise PermissionDenied("You do not have permission to delete this account.")
+        instance.user.delete()
+        super().perform_destroy(instance)
+        return Response({"message": "Account and user deleted."})
+
+
+class AccountListsView(generics.ListAPIView):
+    """View to list all lists associated with the currently logged-in user's account."""
+    serializer_class = ListSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Returns only lists associated with the currently logged-in user's account."""
+        return List.objects.filter(account=self.request.user.account)
+
 
 class ListCreateView(generics.CreateAPIView):
     """View to create a new list (List)."""
@@ -54,6 +62,7 @@ class ListCreateView(generics.CreateAPIView):
         """Associates the list with the currently logged-in user's account."""
         serializer.save(account=self.request.user.account)
 
+
 class ListDetailView(generics.RetrieveUpdateDestroyAPIView):
     """View to retrieve, update, or delete a list (List)."""
     queryset = List.objects.all()
@@ -63,3 +72,19 @@ class ListDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         """Returns only lists associated with the currently logged-in user's account."""
         return List.objects.filter(account=self.request.user.account)
+
+
+class LoginView(generics.GenericAPIView):
+    """View to log in a user."""
+    serializer_class = LoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        """Logs in a user and returns an authentication token."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data
+        token = AuthToken.objects.create(user)[1]
+        return Response({
+            "user": AuthUserSerializer(user, context=self.get_serializer_context()).data,
+            "token": token,
+        })
