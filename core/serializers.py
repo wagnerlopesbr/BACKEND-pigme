@@ -13,6 +13,8 @@ class AuthUserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Creates a new user with hashed password."""
         password = validated_data.pop('password', None)
+        if AuthUserModel.objects.filter(email=validated_data.get('email')).exists():
+            raise serializers.ValidationError({'email': 'Email already exists'})
         user = AuthUserModel.objects.create_user(username=validated_data['username'],
                                                  email=validated_data['email'],
                                                  password=password)
