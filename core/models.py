@@ -21,6 +21,8 @@ class AccountManager(BaseUserManager):
 
 class Account(models.Model):
     user = models.OneToOneField(AuthUserModel, on_delete=models.CASCADE, related_name='account', null=True, blank=True)
+    first_name = models.CharField(max_length=200, blank=True, null=True)
+    last_name = models.CharField(max_length=200, blank=True, null=True)
     zip_code = models.CharField(max_length=200, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
