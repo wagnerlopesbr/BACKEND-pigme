@@ -3,7 +3,6 @@ from .models import Account, List
 from django.contrib.auth.models import User as AuthUserModel
 from django.contrib.auth import authenticate
 from . import utils
-from messaging.producer import publish
 
 
 class AuthUserSerializer(serializers.ModelSerializer):
@@ -15,8 +14,11 @@ class AuthUserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Creates a new user with hashed password."""
-        publish('create_user', 'user_operations', validated_data)
-        return validated_data
+        password = validated_data.pop('password', None)
+        created = utils.create_user_and_account(username=validated_data['username'],
+                                      email=validated_data['email'],
+                                      password=password)
+        return created
 
 class AccountSerializer(serializers.ModelSerializer):
     """Serializer for the Account model."""

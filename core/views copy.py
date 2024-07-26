@@ -7,7 +7,6 @@ from .serializers import AccountSerializer, ListSerializer, AuthUserSerializer, 
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from . import utils
-from messaging.producer import publish
 
 
 class RegisterUserView(generics.CreateAPIView):
@@ -17,9 +16,9 @@ class RegisterUserView(generics.CreateAPIView):
         """Creates a new user and associated account."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        user = serializer.save()
         return Response({
-            "message": "User created successfully."
+            "user": AuthUserSerializer(user, context=self.get_serializer_context()).data,
         })
 
 class AccountDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -65,9 +64,8 @@ class ListCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         """Associates the list with the currently logged-in user's account and enforces list creation rules."""
-        data = {'serializer': serializer.validated_data, 'account': self.request.user.account.user_id}
-        publish('create_list', 'list_operations', data)
-
+        account = self.request.user.account
+        utils.create_list(serializer, account)
 
 class ListDetailView(generics.RetrieveUpdateDestroyAPIView):
     """View to retrieve, update, or delete a list (List)."""
