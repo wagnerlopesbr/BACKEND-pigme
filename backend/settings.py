@@ -27,7 +27,11 @@ SECRET_KEY = "django-insecure-14zo5(q7##siu*40@ux!d4s88xil(ovv3x@(qh$x@y@lajg%l(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'https://backend-pigme.up.railway.app/'
+]
 
 
 # Application definition
