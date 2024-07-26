@@ -12,4 +12,3 @@ No readme for now.
 - api/accounts/lists/ ***(READ many)***
 - api/lists/ ***(CREATE)***
 - api/lists/<<int:pk>> ***(READ one, UPDATE, DELETE)***
-- 
