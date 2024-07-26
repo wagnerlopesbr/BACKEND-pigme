@@ -1,5 +1,6 @@
 from .connection import get_connection
 import json
+import pika
 
 
 def publish(operation, routing_key, data):

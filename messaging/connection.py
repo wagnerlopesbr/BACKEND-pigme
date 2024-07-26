@@ -8,14 +8,11 @@ url = os.getenv("AMQPURL")
 if not url:
     raise ValueError("AMQPURL is not set in environment variables")
 
-
 def get_connection():
     params = pika.URLParameters(url)
     connection = pika.BlockingConnection(params)
     return connection
 
-
-# one-time setup of the exchange and queues
 def setup():
     connection = get_connection()
     channel = connection.channel()
@@ -38,7 +35,6 @@ def setup():
     )
 
     connection.close()
-
 
 if __name__ == "__main__":
     setup()
