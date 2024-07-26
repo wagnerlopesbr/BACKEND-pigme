@@ -10,6 +10,7 @@ from messaging.connection import get_connection
 from core.models import List, Account
 from django.contrib.auth.models import User as AuthUser
 from core.utils import create_user_and_account, update_account, delete_account, create_list, update_list, delete_list
+from core.serializers import AccountSerializer, ListSerializer
 
 
 def callback(ch, method, properties, body):
@@ -35,10 +36,16 @@ def handle_user_operations(operation, data):
         if operation == "create_user":
             create_user_and_account(data['username'], data['email'], data['password'])
         elif operation == "update_user":
-            update_user(data)
+            user = AuthUser.objects.get(id=data['user']['id'])
+            account = Account.objects.get(user=user)
+            serializer = AccountSerializer(account, data=data['serializer'], partial=True)
+            serializer.is_valid(raise_exception=True)
+            update_account(account, serializer, user)
         elif operation == "delete_user":
             print("Deleting user")
-            delete_user(data)
+            user = AuthUser.objects.get(id=data['user']['id'])
+            account = Account.objects.get(user=user)
+            delete_account(account, user)
         else:
             print(f"Unknown user operation: {operation}")
     except Exception as e:
@@ -53,42 +60,24 @@ def handle_list_operations(operation, data):
             create_list(data['serializer'], account)
         elif operation == "update_list":
             print("Updating list")
-            update_list(data)
+            list_instance_id = data['list_instance']['id']
+            list_instance = List.objects.get(id=list_instance_id)
+            account_id = data['account']['id']
+            account = AuthUser.objects.get(id=account_id)
+            serializer = ListSerializer(list_instance, data=data['serializer'], partial=True)
+            update_list(list_instance, account, serializer)
         elif operation == "delete_list":
             print("Deleting list")
-            delete_list(data)
+            list_instance_id = data['list_instance']['id']
+            list_instance = List.objects.get(id=list_instance_id)
+            account_id = data['account']['id']
+            account = AuthUser.objects.get(id=account_id)
+            delete_list(list_instance, account)
         else:
             print(f"Unknown list operation: {operation}")
     except Exception as e:
         print(f"Error handling list operation: {e}")
 
-def update_user(data):
-    try:
-        auth_user = AuthUser.objects.get(id=data['id'])
-        if 'password' in data:
-            auth_user.set_password(data['password'])
-        if 'username' in data:
-            auth_user.username = data['username']
-        auth_user.save()
-        try:
-            account = Account.objects.get(user=auth_user)
-            update_account(account, auth_user)
-        except Account.DoesNotExist:
-            print("Account not found for the user.")
-    except AuthUser.DoesNotExist:
-        print("AuthUser not found")
-
-def delete_user(data):
-    try:
-        auth_user = AuthUser.objects.get(id=data['id'])
-        try:
-            account = Account.objects.get(user=auth_user)
-            delete_account(account, auth_user)
-        except Account.DoesNotExist:
-            pass
-        auth_user.delete()
-    except AuthUser.DoesNotExist:
-        print("AuthUser not found")
 
 def consume():
     try:

@@ -34,14 +34,38 @@ class AccountDetailView(generics.RetrieveUpdateDestroyAPIView):
     
     def perform_update(self, serializer):
         """Override perform_update to prevent changing the user."""
+        print("checking if its valid")
+        serializer.is_valid(raise_exception=True)
+        print("serializer is valid")
+        data = serializer.validated_data
         account = self.get_object()
+        account_data = {
+            'id': account.id,
+            'first_name': account.first_name,
+            'last_name': account.last_name,
+            'zip_code': account.zip_code,
+            'is_active': account.is_active,
+            'is_premium': account.is_premium
+        }
         user = self.request.user
-        utils.update_account(account, serializer, user)
+        user_data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email
+        }
+        publish('update_user', 'user_operations', {'account': account_data, 'serializer': data, 'user': user_data})
     
     def perform_destroy(self, instance):
         """Override perform_destroy to also delete the associated user."""
-        account = utils.delete_account(instance, self.request.user)
-        super().perform_destroy(account)
+        account = self.get_object()
+        account_data = {
+            'id': account.id
+        }
+        user = self.request.user
+        user_data = {
+            'id': user.id
+        }
+        publish('delete_user', 'user_operations', {'account': account_data, 'user': user_data})
         return Response({"message": "Account and user deleted."})
 
 class AccountListsView(generics.ListAPIView):
@@ -68,7 +92,6 @@ class ListCreateView(generics.CreateAPIView):
         data = {'serializer': serializer.validated_data, 'account': self.request.user.account.user_id}
         publish('create_list', 'list_operations', data)
 
-
 class ListDetailView(generics.RetrieveUpdateDestroyAPIView):
     """View to retrieve, update, or delete a list (List)."""
     queryset = List.objects.all()
@@ -78,13 +101,36 @@ class ListDetailView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         """Override perform_update to enforce list update rules."""
         list_instance = self.get_object()
+        list_instance_data = {
+            'id': list_instance.id,
+            'title': list_instance.title,
+            'products': list_instance.products,
+            'account': list_instance.account.id
+        }
         account = self.request.user.account
-        utils.update_list(list_instance, account, serializer)
+        account_data = {
+            'id': account.id
+        }
+        publish('update_list', 'list_operations', {
+            'list_instance': list_instance_data,
+            'account': account_data,
+            'serializer': serializer.validated_data
+        })
     
     def perform_destroy(self, instance):
         """Override perform_destroy to enforce list deletion rules."""
+        list_instance = self.get_object()
+        list_instance_data = {
+            'id': list_instance.id,
+            'title': list_instance.title,
+            'products': list_instance.products,
+            'account': list_instance.account.id
+        }
         account = self.request.user.account
-        utils.delete_list(instance, account)
+        account_data = {
+            'id': account.id
+        }
+        publish('delete_list', 'list_operations', {'list_instance': list_instance_data, 'account': account_data})
         return Response({"message": "List deleted."})
 
 class LoginView(generics.GenericAPIView):
