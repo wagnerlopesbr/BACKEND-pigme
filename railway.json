@@ -6,7 +6,7 @@
   "deploy": {
     "runtime": "V2",
     "numReplicas": 1,
-    "startCommand": "supervisord -c supervisord.conf",
+    "startCommand": "python manage.py runserver 0.0.0.0:$PORT & python3 -m messaging.consumer",
     "sleepApplication": false,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
