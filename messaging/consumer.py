@@ -14,7 +14,6 @@ from core.serializers import AccountSerializer, ListSerializer
 
 
 def callback(ch, method, properties, body):
-    print(f" [x] Received message:\n{body}")
     try:
         message = json.loads(body)
         operation = message["operation"]
@@ -34,8 +33,10 @@ def callback(ch, method, properties, body):
 def handle_user_operations(operation, data):
     try:
         if operation == "create_user":
+            print("Creating user")
             create_user_and_account(data['username'], data['email'], data['password'])
         elif operation == "update_user":
+            print("Updating user")
             user = AuthUser.objects.get(id=data['user']['id'])
             account = Account.objects.get(user=user)
             serializer = AccountSerializer(account, data=data['serializer'], partial=True)
