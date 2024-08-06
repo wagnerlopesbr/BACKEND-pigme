@@ -58,6 +58,10 @@ def handle_list_operations(operation, data):
             print("Creating list")
             user = AuthUser.objects.get(id=data['account'])
             account = Account.objects.get(user=user)
+            print([{"consumer print"},{
+                "data": data['serializer'],
+                "account": account
+            }])
             create_list(data['serializer'], account)
         elif operation == "update_list":
             print("Updating list")

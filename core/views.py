@@ -90,6 +90,7 @@ class ListCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         """Associates the list with the currently logged-in user's account and enforces list creation rules."""
         data = {'serializer': serializer.validated_data, 'account': self.request.user.account.user_id}
+        print('perform_crate data: ', data)
         publish('create_list', 'list_operations', data)
 
 class ListDetailView(generics.RetrieveUpdateDestroyAPIView):
