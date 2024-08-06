@@ -17,16 +17,17 @@ def create_user_and_account(username, email, password):
     return user
 
 def create_list(serializer, account):
-      """Creates a new list (List) associated with the given account."""
-      current_list_count = List.objects.filter(account=account).count()
-      if not account.is_premium and current_list_count >= 3:
-          raise PermissionDenied("Free accounts are limited to 3 lists.")
-      if account.is_premium and current_list_count >= 10:
-          raise PermissionDenied("Premium accounts are limited to 10 lists.")
-      products = serializer.get('products')
-      if len(products) > 40:
-          raise ValidationError("Lists cannot exceed 40 products.")
-      return List.objects.create(title=serializer.get('title'), account=account)
+    """Creates a new list (List) associated with the given account."""
+    print(f"Creating list with data: {serializer}")
+    current_list_count = List.objects.filter(account=account).count()
+    if not account.is_premium and current_list_count >= 3:
+        raise PermissionDenied("Free accounts are limited to 3 lists.")
+    if account.is_premium and current_list_count >= 10:
+        raise PermissionDenied("Premium accounts are limited to 10 lists.")
+    products = serializer.get('products')
+    if len(products) > 40:
+        raise ValidationError("Lists cannot exceed 40 products.")
+    return List.objects.create(title=serializer.get('title'), account=account)
 
 def authenticate_and_generate_token(username, password):
     """Authenticates a user and generates an Auth Token"""
