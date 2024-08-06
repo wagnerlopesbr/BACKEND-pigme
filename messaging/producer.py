@@ -19,8 +19,6 @@ def publish(operation, routing_key, data):
             body=message,
             properties=pika.BasicProperties(delivery_mode=2),  # make message persistent
         )
-        print("producer message", message)
-        print("producer data: ", data)
     except Exception as e:
         print(f"Error publishing message: {e}")
     finally:
