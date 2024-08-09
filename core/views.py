@@ -3,11 +3,12 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User as AuthUserModel
 from knox.models import AuthToken
 from .models import Account, List
-from .serializers import AccountSerializer, ListSerializer, AuthUserSerializer, LoginSerializer
+from .serializers import AccountSerializer, ListSerializer, AuthUserSerializer, LoginSerializer, PasswordChangeSerializer
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from . import utils
 from messaging.producer import publish
+from django.contrib.auth import update_session_auth_hash
 
 
 class RegisterUserView(generics.CreateAPIView):
@@ -147,3 +148,16 @@ class LoginView(generics.GenericAPIView):
             "user": AuthUserSerializer(user, context=self.get_serializer_context()).data,
             "token": token,
         })
+
+class PasswordChangeView(generics.UpdateAPIView):
+    serializer_class = PasswordChangeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+        update_session_auth_hash(request, user)
+        return Response({"message": "Password changed successfully."})

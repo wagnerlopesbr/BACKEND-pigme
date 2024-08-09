@@ -20,12 +20,14 @@ class AuthUserSerializer(serializers.ModelSerializer):
 
 class AccountSerializer(serializers.ModelSerializer):
     """Serializer for the Account model."""
+    user = AuthUserSerializer(required=False)
     class Meta:
         model = Account
         fields = ['id', 'first_name', 'last_name', 'user', 'zip_code', 'is_active', 'is_premium']
         read_only_fields = ['user']
 
 class ProductSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
     title = serializers.CharField()
     price = serializers.CharField()
     brand = serializers.CharField()
@@ -33,16 +35,18 @@ class ProductSerializer(serializers.Serializer):
 
     def validate(self, data):
         """Validates the product data."""
-        required_keys = {"title", "price", "brand", "quantity"}
+        required_keys = {"id", "title", "price", "brand", "quantity"}
         actual_keys = set(data.keys())
         
         # Check for missing or extra keys
         if not required_keys.issubset(actual_keys):
-            raise serializers.ValidationError("Product data must contain 'title', 'price', 'brand', and 'quantity'.")
+            raise serializers.ValidationError("Product data must contain 'id', 'title', 'price', 'brand', and 'quantity'.")
         if actual_keys != required_keys:
             raise serializers.ValidationError("Unexpected keys found in product data.")
         
         # Validate types
+        if not isinstance(data["id"], int):
+            raise serializers.ValidationError("The 'id' field must be an integer.")
         if not isinstance(data["title"], str):
             raise serializers.ValidationError("The 'title' field must be a string.")
         if not isinstance(data["price"], str):
@@ -77,3 +81,19 @@ class LoginSerializer(serializers.Serializer):
         password = data.get('password')
         user, token = utils.authenticate_and_generate_token(username, password)
         return {'user': user, 'token': token}
+
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+    confirm_new_password = serializers.CharField(required=True)
+
+    def validate(self, data):
+        if data['new_password'] != data['confirm_new_password']:
+            raise serializers.ValidationError("New passwords must match.")
+        return data
+
+    def validate_old_password(self, old_password):
+        user = self.context['request'].user
+        if not user.check_password(old_password):
+            raise serializers.ValidationError("Old password is incorrect.")
+        return old_password
