@@ -29,7 +29,7 @@ class AccountSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     title = serializers.CharField()
-    prices = serializers.DictField()
+    prices = serializers.CharField()
     brand = serializers.CharField()
     quantity = serializers.IntegerField()
 
@@ -49,8 +49,8 @@ class ProductSerializer(serializers.Serializer):
             raise serializers.ValidationError("The 'id' field must be an integer.")
         if not isinstance(data["title"], str):
             raise serializers.ValidationError("The 'title' field must be a string.")
-        if not isinstance(data["prices"], dict):
-            raise serializers.ValidationError("The 'prices' field must be a dictionary.")
+        if not isinstance(data["prices"], str):
+            raise serializers.ValidationError("The 'prices' field must be a string.")
         if not isinstance(data["brand"], str):
             raise serializers.ValidationError("The 'brand' field must be a string.")
         if not isinstance(data["quantity"], int):
