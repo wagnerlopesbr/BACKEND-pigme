@@ -29,18 +29,18 @@ class AccountSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     title = serializers.CharField()
-    price = serializers.CharField()
+    prices = serializers.DictField()
     brand = serializers.CharField()
     quantity = serializers.IntegerField()
 
     def validate(self, data):
         """Validates the product data."""
-        required_keys = {"id", "title", "price", "brand", "quantity"}
+        required_keys = {"id", "title", "prices", "brand", "quantity"}
         actual_keys = set(data.keys())
         
         # Check for missing or extra keys
         if not required_keys.issubset(actual_keys):
-            raise serializers.ValidationError("Product data must contain 'id', 'title', 'price', 'brand', and 'quantity'.")
+            raise serializers.ValidationError("Product data must contain 'id', 'title', 'prices', 'brand', and 'quantity'.")
         if actual_keys != required_keys:
             raise serializers.ValidationError("Unexpected keys found in product data.")
         
@@ -49,8 +49,8 @@ class ProductSerializer(serializers.Serializer):
             raise serializers.ValidationError("The 'id' field must be an integer.")
         if not isinstance(data["title"], str):
             raise serializers.ValidationError("The 'title' field must be a string.")
-        if not isinstance(data["price"], str):
-            raise serializers.ValidationError("The 'price' field must be a string.")
+        if not isinstance(data["prices"], dict):
+            raise serializers.ValidationError("The 'prices' field must be a dictionary.")
         if not isinstance(data["brand"], str):
             raise serializers.ValidationError("The 'brand' field must be a string.")
         if not isinstance(data["quantity"], int):
