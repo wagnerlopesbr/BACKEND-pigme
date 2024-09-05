@@ -33,7 +33,9 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    'backend-pigme.up.railway.app'
+    'backend-pigme.up.railway.app',
+    '192.168.0.39',
+    '192.168.0.1'
 ]
 
 
@@ -95,8 +97,18 @@ WSGI_APPLICATION = "backend.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+
+# # using deployed Postgres database:
+# DATABASES = {
+#     'default': dj_database_url.config(default=os.getenv('PG_URL'))
+# }
+
+# using local sqlite database:
 DATABASES = {
-    'default': dj_database_url.config(default=os.getenv('PG_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'local_database.db',
+    }
 }
 
 
