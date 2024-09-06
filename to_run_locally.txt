@@ -1,3 +1,5 @@
 command to run locally (in order; two different terminals):
-python manage.py runserver 8001  # run the server
-python3 -m messaging.consumer  # run the consumer/rabbitmq
+
+source .venv/Scripts/activate
+python manage.py runserver 8001
+python -m messaging.consumer
